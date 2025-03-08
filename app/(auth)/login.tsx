@@ -1,7 +1,8 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { signIn } from "../../lib/supabase_crud"; // Importing Sign-in Function
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -9,23 +10,38 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  // ✅ Function to Handle Login
+  const handleLogin = async () => {
+    try {
+      await signIn(email, password);
+      router.replace("/(tabs)"); // Navigate to Home
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert("Login Error", error.message);
+      } else {
+        Alert.alert("Login Error", "An unknown error occurred.");
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome back! Glad to see you, Again!</Text>
+      <Text style={styles.title}>Welcome Back!</Text>
 
       <View style={styles.inputContainer}>
         <TextInput 
-          placeholder="Enter your email" 
+          placeholder="Email" 
           placeholderTextColor="#888" 
           value={email} 
           onChangeText={setEmail} 
           style={styles.input} 
+          keyboardType="email-address"
         />
       </View>
 
       <View style={styles.inputContainer}>
         <TextInput 
-          placeholder="Enter your password" 
+          placeholder="Password" 
           placeholderTextColor="#888" 
           value={password} 
           onChangeText={setPassword} 
@@ -41,27 +57,13 @@ export default function LoginScreen() {
         <Text style={styles.forgotPassword}>Forgot Password?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.loginButton} onPress={() => router.replace("/(tabs)")}>
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
         <Text style={styles.loginButtonText}>Login</Text>
       </TouchableOpacity>
 
-      <Text style={styles.orText}>Or Login with</Text>
-
-      <View style={styles.socialButtons}>
-        <TouchableOpacity style={styles.socialButton}>
-          <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/124/124010.png" }} style={styles.socialIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialButton}>
-          <Image source={{ uri: "https://upload.wikimedia.org/wikipedia/commons/0/09/IOS_Google_icon.png" }} style={styles.socialIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialButton}>
-          <Image source={{ uri: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" }} style={styles.socialIcon} />
-        </TouchableOpacity>
-      </View>
-
       <Text style={styles.registerText}>
         Don't have an account? 
-        <Text style={styles.registerLink} onPress={() => router.push("/(auth)/register")}> Register Now</Text>
+        <Text style={styles.registerLink} onPress={() => router.push("/(auth)/register")}> Register</Text>
       </Text>
     </View>
   );
@@ -75,11 +77,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#000",
-    marginBottom: 30,
     textAlign: "center",
+    marginBottom: 20,
   },
   inputContainer: {
     backgroundColor: "#EDEDED",
@@ -113,29 +114,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  orText: {
-    textAlign: "center",
-    color: "#888",
-    marginVertical: 20,
-  },
-  socialButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  socialButton: {
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  socialIcon: {
-    width: 24,
-    height: 24,
-  },
   registerText: {
     textAlign: "center",
     marginTop: 20,
@@ -146,3 +124,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+

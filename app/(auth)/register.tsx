@@ -1,6 +1,7 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
+import { signUp } from "../../lib/supabase_crud"; // Importing Sign-up Function
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -8,23 +9,44 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // ✅ Function to Handle Registration
+  const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match!");
+      return;
+    }
+
+    try {
+      await signUp(email, password);
+      Alert.alert("Success", "Account created! Please log in.");
+      router.replace("/(auth)/login");
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert("Registration Error", error.message);
+      } else {
+        Alert.alert("Registration Error", "An unknown error occurred.");
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create an account</Text>
+      <Text style={styles.title}>Create an Account</Text>
 
       <View style={styles.inputContainer}>
         <TextInput 
-          placeholder="Enter your email" 
+          placeholder="Email" 
           placeholderTextColor="#888" 
           value={email} 
           onChangeText={setEmail} 
           style={styles.input} 
+          keyboardType="email-address"
         />
       </View>
 
       <View style={styles.inputContainer}>
         <TextInput 
-          placeholder="Enter your password" 
+          placeholder="Password" 
           placeholderTextColor="#888" 
           value={password} 
           onChangeText={setPassword} 
@@ -35,7 +57,7 @@ export default function RegisterScreen() {
 
       <View style={styles.inputContainer}>
         <TextInput 
-          placeholder="Confirm your password" 
+          placeholder="Confirm Password" 
           placeholderTextColor="#888" 
           value={confirmPassword} 
           onChangeText={setConfirmPassword} 
@@ -44,7 +66,7 @@ export default function RegisterScreen() {
         />
       </View>
 
-      <TouchableOpacity style={styles.loginButton} onPress={() => router.replace("/(tabs)")}>
+      <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
         <Text style={styles.loginButtonText}>Register</Text>
       </TouchableOpacity>
 
@@ -64,11 +86,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#000",
-    marginBottom: 30,
     textAlign: "center",
+    marginBottom: 20,
   },
   inputContainer: {
     backgroundColor: "#EDEDED",
@@ -83,14 +104,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: "#000",
   },
-  eyeIcon: {
-    padding: 10,
-  },
-  forgotPassword: {
-    textAlign: "right",
-    color: "#888",
-    marginBottom: 20,
-  },
   loginButton: {
     backgroundColor: "#000",
     paddingVertical: 15,
@@ -101,29 +114,6 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  orText: {
-    textAlign: "center",
-    color: "#888",
-    marginVertical: 20,
-  },
-  socialButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  socialButton: {
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  socialIcon: {
-    width: 24,
-    height: 24,
   },
   registerText: {
     textAlign: "center",
