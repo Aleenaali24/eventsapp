@@ -1,29 +1,55 @@
-import { View, Text, StyleSheet, Animated } from "react-native";
 import { useEffect, useRef } from "react";
-import { useRouter } from "expo-router";
+import { View, Text, Animated, StyleSheet, Easing } from "react-native";
+import { useRouter, useRootNavigationState } from "expo-router";
 
 export default function SplashScreen() {
   const router = useRouter();
-  const fadeAnim = useRef(new Animated.Value(0)).current; // Start opacity at 0
+  const navigationState = useRootNavigationState(); // Ensure router is mounted
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade-in animation
-    Animated.timing(fadeAnim, {
+    if (!navigationState?.key) return; // 🚀 Wait until router is ready
+
+    Animated.timing(rotateAnim, {
       toValue: 1,
       duration: 1500,
+      easing: Easing.linear,
       useNativeDriver: true,
     }).start();
 
-    // Navigate to login after 2 seconds
-    setTimeout(() => {
-      router.replace("/(auth)/login");
-    }, 2000);
-  }, []);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    const navigateToLogin = setTimeout(() => {
+      router.replace("/(auth)/login"); // ✅ Navigate only when ready
+    }, 2500);
+
+    return () => clearTimeout(navigateToLogin);
+  }, [navigationState?.key]);
 
   return (
     <View style={styles.container}>
-      <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>
-        Events App
+      <Animated.Text
+        style={[
+          styles.title,
+          {
+            transform: [
+              {
+                rotate: rotateAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0deg", "360deg"],
+                }),
+              },
+            ],
+            opacity: fadeAnim,
+          },
+        ]}
+      >
+        Instant Connect
       </Animated.Text>
     </View>
   );
@@ -37,7 +63,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "bold",
     color: "#FFA500",
   },

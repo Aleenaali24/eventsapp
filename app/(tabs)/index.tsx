@@ -1,41 +1,51 @@
 import { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getCurrentUser, signOut } from "../../lib/supabase_crud";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const userToken = await AsyncStorage.getItem("userToken"); // Check if user is logged in
-
-      if (!userToken) {
-        router.replace("/(auth)/login"); // Redirect to Login if not authenticated
-      } else {
-        setIsAuthenticated(true); // Show home screen
+      try {
+        const loggedInUser = await getCurrentUser();
+        if (!loggedInUser) {
+          console.log("No user session found. Redirecting to login.");
+          router.replace("/(auth)/login");
+        } else {
+          setUser(loggedInUser);
+          console.log("User authenticated:", loggedInUser);
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        Alert.alert("Authentication Error", error instanceof Error ? error.message : "An unknown error occurred.");
+        router.replace("/(auth)/login");
+      } finally {
+        setLoading(false);
       }
     };
 
     checkAuth();
   }, []);
 
-  if (isAuthenticated === null) {
+  if (loading) {
     return (
-      <View style={styles.loaderContainer}>
+      <View style={styles.container}>
         <ActivityIndicator size="large" color="#FFA500" />
       </View>
-    ); // Show loading indicator while checking auth
+    );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Events App</Text>
+      <Text style={styles.title}>Welcome, {user?.email}!</Text>
       <TouchableOpacity
         style={styles.button}
         onPress={async () => {
-          await AsyncStorage.removeItem("userToken"); // Log out
+          await signOut();
           router.replace("/(auth)/login");
         }}
       >
@@ -46,33 +56,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#121212",
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#121212",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FF9800",
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: "#FF9800",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#121212",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
+  title: { fontSize: 24, color: "#FFA500", marginBottom: 20 },
+  button: { backgroundColor: "#FFA500", padding: 10, borderRadius: 8 },
+  buttonText: { color: "#000", fontSize: 16, fontWeight: "bold" },
 });

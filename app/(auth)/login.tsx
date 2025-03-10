@@ -13,14 +13,17 @@ export default function LoginScreen() {
   // ✅ Function to Handle Login
   const handleLogin = async () => {
     try {
-      await signIn(email, password);
-      router.replace("/(tabs)"); // Navigate to Home
-    } catch (error) {
-      if (error instanceof Error) {
-        Alert.alert("Login Error", error.message);
+      const { session, user } = await signIn(email, password); // Ensure we get user session
+
+      if (session) {
+        Alert.alert("Success", `Welcome back, ${user.email}!`);
+        console.log("User logged in:", user);
+        router.replace("/(tabs)/landing"); // ✅ Navigate to Landing Page after successful login
       } else {
-        Alert.alert("Login Error", "An unknown error occurred.");
+        Alert.alert("Error", "Login failed. No session found.");
       }
+    } catch (error) {
+      Alert.alert("Login Error", (error as Error).message);
     }
   };
 
@@ -124,4 +127,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
