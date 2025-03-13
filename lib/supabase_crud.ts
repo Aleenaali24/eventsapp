@@ -1,16 +1,27 @@
-// src/supabase_crud.ts
 import supabase from './supabase';
 
 // Define the User type (based on your `users` table schema)
 export interface User {
   id: string;
   email: string;
-  password: string;  // In production, you should hash the password before saving it
+  password?: string;  // Password should never be exposed in production
   role: 'admin' | 'attendee';
   created_at: string;
 }
 
-// Insert a user into the users table (Create)
+// 🔹 Get the currently authenticated user
+export const getCurrentUser = async (): Promise<{ success: boolean; user: any | null; error?: any }> => {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    console.error('Error fetching current user:', error);
+    return { success: false, user: null, error };
+  }
+
+  return { success: true, user: data?.user || null };
+};
+
+// 🔹 Insert a user into the `users` table (Create)
 export const addUser = async (
   email: string,
   password: string,
@@ -28,26 +39,24 @@ export const addUser = async (
   if (error) {
     console.error('Error adding user:', error);
     return { success: false, data: null, error };
-  } else {
-    console.log('User added:', data);
-    return { success: true, data: data || null };  // Ensure data is never undefined
   }
+
+  return { success: true, data: data || null };  // Ensure data is never undefined
 };
 
-// Get all users (Read)
+// 🔹 Get all users (Read)
 export const getUsers = async (): Promise<{ success: boolean; data: User[] | null; error?: any }> => {
   const { data, error } = await supabase.from('users').select('*');
 
   if (error) {
     console.error('Error fetching users:', error);
     return { success: false, data: null, error };
-  } else {
-    console.log('Users:', data);
-    return { success: true, data: data || null };  // If no users are found, return null
   }
+
+  return { success: true, data: data || null };
 };
 
-// Update a user's role (Update)
+// 🔹 Update a user's role (Update)
 export const updateUserRole = async (
   userId: string,
   newRole: 'admin' | 'attendee'
@@ -55,29 +64,27 @@ export const updateUserRole = async (
   const { data, error } = await supabase
     .from('users')
     .update({ role: newRole })
-    .eq('id', userId);  // `eq` ensures that only the user with the matching `userId` is updated
+    .eq('id', userId);
 
   if (error) {
     console.error('Error updating user:', error);
     return { success: false, data: null, error };
-  } else {
-    console.log('User updated:', data);
-    return { success: true, data: data || null };  // Return null if no data is updated
   }
+
+  return { success: true, data: data || null };
 };
 
-// Delete a user (Delete)
+// 🔹 Delete a user (Delete)
 export const deleteUser = async (userId: string): Promise<{ success: boolean; data: User[] | null; error?: any }> => {
   const { data, error } = await supabase
     .from('users')
     .delete()
-    .eq('id', userId);  // Deletes the user by `id`
+    .eq('id', userId);
 
   if (error) {
     console.error('Error deleting user:', error);
     return { success: false, data: null, error };
-  } else {
-    console.log('User deleted:', data);
-    return { success: true, data: data || null };  // Return null if no data is deleted
   }
+
+  return { success: true, data: data || null };
 };

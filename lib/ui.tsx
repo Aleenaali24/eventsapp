@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button, TextInput, View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
+import { Button, TextInput, View, Text, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { addUser, getUsers, updateUserRole, deleteUser, User } from './supabase_crud';
+import { addUser, getUsers, updateUserRole, deleteUser, getCurrentUser, User } from './supabase_crud';
 
 const UI: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -10,15 +10,35 @@ const UI: React.FC = () => {
   const [role, setRole] = useState<'admin' | 'attendee'>('attendee');
   const [newRole, setNewRole] = useState<'admin' | 'attendee' | ''>('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
 
-  useEffect(() => { 
+  useEffect(() => {
     const fetchUsers = async () => {
-      const result = await getUsers();
-      if (result.success) {
-        setUsers(result.data || []);
+      setLoading(true);
+      try {
+        const result = await getUsers();
+        if (result.success) {
+          setUsers(result.data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setLoading(false);
       }
     };
+
+    const checkAuth = async () => {
+      const result = await getCurrentUser();
+      if (result.success) {
+        setCurrentUser(result.user);
+      } else {
+        console.error("No authenticated user found");
+      }
+    };
+
     fetchUsers();
+    checkAuth();
   }, []);
 
   const handleAddUser = async () => {
@@ -26,13 +46,19 @@ const UI: React.FC = () => {
       Alert.alert('Error', 'Please enter email and password');
       return;
     }
+
+    setLoading(true);
     const result = await addUser(email, password, role);
+    setLoading(false);
+
     if (result.success) {
       Alert.alert('Success', 'User added successfully!');
       setEmail('');
       setPassword('');
       setRole('attendee');
       refreshUsers();
+    } else {
+      Alert.alert('Error', 'Failed to add user');
     }
   };
 
@@ -41,10 +67,16 @@ const UI: React.FC = () => {
       Alert.alert('Error', 'Please select a user and a new role');
       return;
     }
+
+    setLoading(true);
     const result = await updateUserRole(selectedUserId, newRole);
+    setLoading(false);
+
     if (result.success) {
       Alert.alert('Success', 'User role updated successfully!');
       refreshUsers();
+    } else {
+      Alert.alert('Error', 'Failed to update user role');
     }
   };
 
@@ -54,10 +86,15 @@ const UI: React.FC = () => {
       { 
         text: 'Delete', 
         onPress: async () => {
+          setLoading(true);
           const result = await deleteUser(userId);
+          setLoading(false);
+
           if (result.success) {
             Alert.alert('Success', 'User deleted successfully!');
             refreshUsers();
+          } else {
+            Alert.alert('Error', 'Failed to delete user');
           }
         },
         style: 'destructive'
@@ -66,24 +103,36 @@ const UI: React.FC = () => {
   };
 
   const refreshUsers = async () => {
+    setLoading(true);
     const fetchUsers = await getUsers();
+    setLoading(false);
+
     if (fetchUsers.success) {
       setUsers(fetchUsers.data || []);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+      {loading && <ActivityIndicator size="large" color="#007bff" />}
+
+      {/* Authenticated User Info */}
+      {currentUser ? (
+        <Text style={styles.authInfo}>Logged in as: {currentUser.email}</Text>
+      ) : (
+        <Text style={styles.authError}>No user logged in</Text>
+      )}
+
       {/* Add User Section */}
       <Text style={styles.header}>Add User</Text>
       <TextInput
-        placeholder="Email"
+        placeholder="Enter Email"
         value={email}
         onChangeText={setEmail}
         style={styles.input}
       />
       <TextInput
-        placeholder="Password"
+        placeholder="Enter Password"
         value={password}
         onChangeText={setPassword}
         style={styles.input}
@@ -97,7 +146,9 @@ const UI: React.FC = () => {
         <Picker.Item label="Attendee" value="attendee" />
         <Picker.Item label="Admin" value="admin" />
       </Picker>
-      <Button title="Add User" onPress={handleAddUser} color="#007bff" />
+      <View style={styles.buttonContainer}>
+        <Button title="Add User" onPress={handleAddUser} color="#007bff" />
+      </View>
 
       {/* Update User Role Section */}
       <Text style={styles.header}>Update User Role</Text>
@@ -120,7 +171,9 @@ const UI: React.FC = () => {
         <Picker.Item label="Attendee" value="attendee" />
         <Picker.Item label="Admin" value="admin" />
       </Picker>
-      <Button title="Update Role" onPress={handleUpdateUserRole} color="#28a745" />
+      <View style={styles.buttonContainer}>
+        <Button title="Update Role" onPress={handleUpdateUserRole} color="#28a745" />
+      </View>
 
       {/* Users List Section */}
       <Text style={styles.header}>Users List</Text>
@@ -140,35 +193,54 @@ const UI: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
     backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+  },
+  authInfo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007bff',
+    marginBottom: 10,
+  },
+  authError: {
+    fontSize: 16,
+    color: 'red',
+    marginBottom: 10,
   },
   header: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
     color: '#333',
+    alignSelf: 'flex-start',
   },
   input: {
-    height: 40,
+    width: '100%',
+    height: 45,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
+    borderRadius: 8,
+    marginBottom: 15,
     paddingHorizontal: 10,
     backgroundColor: '#fff',
   },
   picker: {
-    height: 50,
     width: '100%',
     backgroundColor: '#fff',
-    marginBottom: 10,
+    marginBottom: 15,
+    borderRadius: 8,
+  },
+  buttonContainer: {
+    width: '100%',
+    marginBottom: 20,
   },
   userRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
@@ -177,8 +249,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  noUsersText: {
+  noUsersText: {  // 🔥 Added missing style
     textAlign: 'center',
+    fontSize: 16,
     color: '#666',
     marginTop: 10,
   },

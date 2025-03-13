@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { logIn, signInWithLinkedIn } from '../../lib/supabase_auth';
+import { signUp, signInWithLinkedIn } from '../../lib/supabase_auth';
 import { useRouter } from 'expo-router';
 
-const Login: React.FC = () => {
+const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleSignUp = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please enter your email and password.');
       return;
     }
 
-    const result = await logIn(email, password);
+    const result = await signUp(email, password);
 
     if (result.success) {
-      Alert.alert('Success', 'Logged in successfully!');
-      router.push('/'); // Redirect to home page
+      Alert.alert('Success', 'Account created! Please check your email for verification.');
+      router.push('/auth/Login'); // Navigate to Login Page
     } else {
       Alert.alert('Error', result.error);
     }
@@ -26,7 +26,7 @@ const Login: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Login</Text>
+      <Text style={styles.header}>Sign Up</Text>
 
       <TextInput
         placeholder="Enter Email"
@@ -44,36 +44,32 @@ const Login: React.FC = () => {
         placeholderTextColor="#333"
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
+        <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>OR</Text>
 
       <TouchableOpacity style={[styles.button, styles.linkedinButton]} onPress={() => signInWithLinkedIn()}>
-        <Text style={styles.buttonText}>Login with LinkedIn</Text>
+        <Text style={styles.buttonText}>Sign Up with LinkedIn</Text>
       </TouchableOpacity>
 
-      <Text style={styles.linkText} onPress={() => router.push('/auth/SignUp')}>
-        Don't have an account? Sign Up
+      <Text style={styles.linkText} onPress={() => router.push('/auth/Login')}>
+        Already have an account? Log In
       </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20, 
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
     backgroundColor: '#f8f9fa',
   },
-  header: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginBottom: 20 
-  },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
   input: { 
     width: '100%', 
     height: 45, 
@@ -100,16 +96,8 @@ const styles = StyleSheet.create({
   linkedinButton: {
     backgroundColor: '#0072b1',
   },
-  orText: { 
-    marginVertical: 10, 
-    fontSize: 16, 
-    fontWeight: 'bold' 
-  },
-  linkText: { 
-    marginTop: 10, 
-    color: '#007bff', 
-    fontWeight: 'bold' 
-  },
+  orText: { marginVertical: 10, fontSize: 16, fontWeight: 'bold' },
+  linkText: { marginTop: 10, color: '#007bff', fontWeight: 'bold' },
 });
 
-export default Login;
+export default SignUp;
