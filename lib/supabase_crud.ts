@@ -1,68 +1,83 @@
-import supabase from "./supabase";
+// src/supabase_crud.ts
+import supabase from './supabase';
 
-// ✅ Function to Sign In a User
-export async function signIn(email: string, password: string) {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) throw new Error(error.message);
-
-    if (!data.session) {
-      throw new Error("Login successful, but no active session found.");
-    }
-
-    return data; // ✅ Return session and user
-  } catch (error) {
-    console.error("Login Error:", error);
-    throw new Error(error instanceof Error ? error.message : "An unexpected login error occurred.");
-  }
+// Define the User type (based on your `users` table schema)
+export interface User {
+  id: string;
+  email: string;
+  password: string;  // In production, you should hash the password before saving it
+  role: 'admin' | 'attendee';
+  created_at: string;
 }
 
-// ✅ Function to Sign Up a New User
-export async function signUp(email: string, password: string) {
-  try {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+// Insert a user into the users table (Create)
+export const addUser = async (
+  email: string,
+  password: string,
+  role: 'admin' | 'attendee'
+): Promise<{ success: boolean; data: User[] | null; error?: any }> => {
+  const { data, error } = await supabase.from('users').insert([
+    {
+      email: email,
+      password: password,  // In production, you should hash the password before storing it
+      role: role,
+      created_at: new Date().toISOString(),
+    },
+  ]);
 
-    if (error) throw new Error(error.message);
-
-    if (!data.user) {
-      throw new Error("Account created, but user data is missing.");
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Signup Error:", error);
-    throw new Error(error instanceof Error ? error.message : "An unexpected signup error occurred.");
+  if (error) {
+    console.error('Error adding user:', error);
+    return { success: false, data: null, error };
+  } else {
+    console.log('User added:', data);
+    return { success: true, data: data || null };  // Ensure data is never undefined
   }
-}
+};
 
-// ✅ Function to Sign Out a User
-export async function signOut() {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw new Error(error.message);
-  } catch (error) {
-    console.error("Logout Error:", error);
-    throw new Error(error instanceof Error ? error.message : "An unexpected logout error occurred.");
+// Get all users (Read)
+export const getUsers = async (): Promise<{ success: boolean; data: User[] | null; error?: any }> => {
+  const { data, error } = await supabase.from('users').select('*');
+
+  if (error) {
+    console.error('Error fetching users:', error);
+    return { success: false, data: null, error };
+  } else {
+    console.log('Users:', data);
+    return { success: true, data: data || null };  // If no users are found, return null
   }
-}
+};
 
-// ✅ Function to Get Current User (Ensures session exists)
-export async function getCurrentUser() {
-  try {
-    // ✅ Step 1: Check if a session exists
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData?.session) {
-      throw new Error("No active session found. Please log in again.");
-    }
+// Update a user's role (Update)
+export const updateUserRole = async (
+  userId: string,
+  newRole: 'admin' | 'attendee'
+): Promise<{ success: boolean; data: User[] | null; error?: any }> => {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ role: newRole })
+    .eq('id', userId);  // `eq` ensures that only the user with the matching `userId` is updated
 
-    // ✅ Step 2: Fetch user details (Only if session exists)
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) throw new Error(userError.message);
-
-    return userData.user;
-  } catch (error) {
-    console.error("Fetching User Error:", error);
-    throw new Error(error instanceof Error ? error.message : "An unexpected error occurred while fetching user.");
+  if (error) {
+    console.error('Error updating user:', error);
+    return { success: false, data: null, error };
+  } else {
+    console.log('User updated:', data);
+    return { success: true, data: data || null };  // Return null if no data is updated
   }
-}
+};
+
+// Delete a user (Delete)
+export const deleteUser = async (userId: string): Promise<{ success: boolean; data: User[] | null; error?: any }> => {
+  const { data, error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', userId);  // Deletes the user by `id`
+
+  if (error) {
+    console.error('Error deleting user:', error);
+    return { success: false, data: null, error };
+  } else {
+    console.log('User deleted:', data);
+    return { success: true, data: data || null };  // Return null if no data is deleted
+  }
+};
