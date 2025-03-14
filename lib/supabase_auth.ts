@@ -6,72 +6,125 @@ WebBrowser.maybeCompleteAuthSession();
 
 // 🔹 Sign Up with Email & Password
 export const signUp = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password });
 
-  if (error) {
-    console.error('Sign Up Error:', error.message);
-    return { success: false, error: error.message };
+    if (error) {
+      console.error('❌ Sign Up Error:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log("✅ Sign Up Successful:", data.user);
+    return { success: true, user: data.user };
+
+  } catch (err) {
+    console.error("❌ Unexpected Sign Up Error:", err);
+    return { success: false, error: "An unexpected error occurred" };
   }
-
-  return { success: true, user: data.user };
 };
 
 // 🔹 Log In with Email & Password
 export const logIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
-    console.error('Log In Error:', error.message);
-    return { success: false, error: error.message };
+    if (error) {
+      console.error('❌ Log In Error:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log("✅ Log In Successful:", data.user);
+    return { success: true, user: data.user };
+
+  } catch (err) {
+    console.error("❌ Unexpected Log In Error:", err);
+    return { success: false, error: "An unexpected error occurred" };
   }
-
-  return { success: true, user: data.user };
 };
 
 // 🔹 Sign in with LinkedIn OAuth (OIDC)
 export const signInWithLinkedIn = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'linkedin_oidc',  // 🔥 MUST use 'linkedin_oidc' (not 'linkedin')
-    options: {
-      redirectTo: 'exp://127.0.0.1:19000/--/auth/callback',  // Update for production
-    },
-  });
+  try {
+    const redirectUrl = 'https://your-supabase-project.supabase.co/auth/v1/callback';
 
-  if (error) {
-    console.error(`LinkedIn Sign In Error:`, error.message);
-    return { success: false, error: error.message };
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: { redirectTo: redirectUrl },
+    });
+
+    if (error) {
+      console.error(`❌ LinkedIn Sign In Error:`, error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log("🔗 Redirecting to:", data.url);
+
+    if (data?.url) {
+      await WebBrowser.openBrowserAsync(data.url);
+      return await getCurrentUser();
+    }
+
+    return { success: false, error: "No redirect URL returned from Supabase" };
+
+  } catch (err) {
+    console.error("❌ LinkedIn Sign-In Unexpected Error:", err);
+    return { success: false, error: "An unexpected error occurred" };
   }
-
-  console.log("Redirecting to:", data.url);
-
-  if (data?.url) {
-    await WebBrowser.openBrowserAsync(data.url); // Open LinkedIn login in a browser
-    return { success: true };
-  }
-
-  return { success: false, error: "No redirect URL returned from Supabase" };
 };
 
 // 🔹 Get Current Authenticated User
 export const getCurrentUser = async () => {
-  const { data, error } = await supabase.auth.getUser();
+  try {
+    const { data, error } = await supabase.auth.getUser();
 
-  if (error) {
-    console.error('Error getting current user:', error.message);
-    return { success: false, user: null, error: error.message };
+    if (error) {
+      console.error('❌ Error getting current user:', error.message);
+      return { success: false, user: null, error: "No session found. Try logging in again." };
+    }
+
+    console.log("✅ Current User:", data.user);
+    return { success: true, user: data.user };
+
+  } catch (err) {
+    console.error("❌ Unexpected Error in getCurrentUser:", err);
+    return { success: false, user: null, error: "An unexpected error occurred" };
   }
+};
 
-  return { success: true, user: data.user };
+// 🔹 Reset Password (without email verification)
+export const resetPassword = async (email: string, newPassword: string) => {
+  try {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (error) {
+      console.error('❌ Reset Password Error:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log("✅ Password Reset Successful");
+    return { success: true };
+
+  } catch (err) {
+    console.error("❌ Unexpected Reset Password Error:", err);
+    return { success: false, error: "An unexpected error occurred" };
+  }
 };
 
 // 🔹 Log Out
 export const logOut = async () => {
-  const { error } = await supabase.auth.signOut();
+  try {
+    const { error } = await supabase.auth.signOut();
 
-  if (error) {
-    console.error('Log Out Error:', error.message);
-    return { success: false, error: error.message };
+    if (error) {
+      console.error('❌ Log Out Error:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log("✅ User Logged Out");
+    return { success: true };
+
+  } catch (err) {
+    console.error("❌ Unexpected Error in logOut:", err);
+    return { success: false, error: "An unexpected error occurred" };
   }
-
-  return { success: true };
 };

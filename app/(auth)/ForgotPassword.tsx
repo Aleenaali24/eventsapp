@@ -1,26 +1,26 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { logIn, signUp, signInWithLinkedIn } from '../../lib/supabase_auth';
+import { resetPassword } from '../../lib/supabase_auth';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const LoginSignup = ({ isLogin = true }) => {
+const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  const handleAuth = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter your email and password.');
+  const handleResetPassword = async () => {
+    if (!email || !newPassword) {
+      Alert.alert('Error', 'Please enter your email and new password.');
       return;
     }
 
-    const result = isLogin ? await logIn(email, password) : await signUp(email, password);
+    const result = await resetPassword(email, newPassword);
 
     if (result.success) {
-      Alert.alert('Success', isLogin ? 'Logged in successfully!' : 'Account created successfully!');
-      router.push('/');
+      Alert.alert('Success', 'Password has been reset successfully!');
+      router.push('/(auth)/login');
     } else {
       Alert.alert('Error', result.error);
     }
@@ -28,7 +28,7 @@ const LoginSignup = ({ isLogin = true }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{isLogin ? 'Login' : 'Sign Up'}</Text>
+      <Text style={styles.header}>Reset Password</Text>
 
       <TextInput
         placeholder="Enter Email"
@@ -40,9 +40,9 @@ const LoginSignup = ({ isLogin = true }) => {
 
       <View style={styles.passwordContainer}>
         <TextInput
-          placeholder="Enter Password"
-          value={password}
-          onChangeText={setPassword}
+          placeholder="Enter New Password"
+          value={newPassword}
+          onChangeText={setNewPassword}
           style={styles.passwordInput}
           secureTextEntry={!showPassword}
           placeholderTextColor="#333"
@@ -52,26 +52,12 @@ const LoginSignup = ({ isLogin = true }) => {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleAuth}>
-        <Text style={styles.buttonText}>{isLogin ? 'Login' : 'Sign Up'}</Text>
+      <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
+        <Text style={styles.buttonText}>Reset Password</Text>
       </TouchableOpacity>
 
-      {isLogin && (
-        <Text style={styles.linkText} onPress={() => router.push('/(auth)/ForgotPassword')}>
-          Forgot Password?
-        </Text>
-      )}
-
-      <Text style={styles.orText}>OR</Text>
-
-      <TouchableOpacity style={[styles.button, styles.linkedinButton]} onPress={signInWithLinkedIn}>
-        <Text style={styles.buttonText}>{isLogin ? 'Login with LinkedIn' : 'Sign Up with LinkedIn'}</Text>
-      </TouchableOpacity>
-
-      <Text
-        style={styles.linkText}
-        onPress={() => router.push(isLogin ? '/auth/SignUp' : '/auth/Login')}>
-        {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
+      <Text style={styles.linkText} onPress={() => router.push('/(auth)/login')}>
+        Back to Login
       </Text>
     </View>
   );
@@ -85,9 +71,7 @@ const styles = StyleSheet.create({
   passwordInput: { flex: 1, height: '100%' },
   button: { backgroundColor: '#007bff', paddingVertical: 12, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 15 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  linkedinButton: { backgroundColor: '#0072b1' },
-  orText: { marginVertical: 10, fontSize: 16, fontWeight: 'bold' },
   linkText: { marginTop: 10, color: '#007bff', fontWeight: 'bold' },
 });
 
-export default LoginSignup;
+export default ForgotPassword;
